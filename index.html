@@ -1,121 +1,162 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1728">
 <title>BURUNDI JULES TRACKER</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-*{box-sizing:border-box}
-body{
- margin:0;
- font-family:Arial,sans-serif;
- background:#101827;
- color:white;
-}
-header{
- background:#17263c;
- padding:20px;
- text-align:center;
-}
-header h2{color:#38bdf8}
-.container{padding:18px}
-.card{
- background:#1e293b;
- padding:18px;
- margin-bottom:15px;
- border-radius:12px;
-}
-.stats{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:12px;
-}
-.stat h2{color:#38bdf8}
-#map{
- height:380px;
- border-radius:12px;
-}
-button{
- background:#0284c7;
- color:white;
- border:0;
- padding:12px;
- border-radius:8px;
-}
+:root{--bg:#0b1220;--panel:#121e30;--panel2:#19283d;--line:#263950;--text:#edf4ff;--muted:#9db0c8;--blue:#27a8e8;--green:#22c58b;--red:#f36b75;--amber:#f5b942}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,Roboto,Arial}
+button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:9px;padding:11px 15px;background:var(--blue);color:#061522;font-weight:700}
+button.secondary{background:#263950;color:var(--text)}button.danger{background:#5a2630;color:#ffdce0}
+input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:9px;background:#0d1929;color:var(--text);margin:6px 0 12px}
+label{font-size:13px;color:var(--muted)}h1,h2,h3,p{margin-top:0}.muted{color:var(--muted)}.hidden{display:none!important}
+#loginScreen{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% 0,#163b5b 0,#0b1220 55%)}
+.login-card{width:min(430px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 20px 60px #0006}
+.brand{font-weight:900;letter-spacing:1px;color:#67caff}.login-card h1{font-size:24px;margin:12px 0 6px}.login-card button{width:100%}
+#app{min-height:100vh}.topbar{height:auto;min-height:68px;padding:14px 20px;background:#101c2d;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.topbar strong{font-size:18px}.topbar small{color:var(--muted)}.layout{display:grid;grid-template-columns:225px 1fr;min-height:calc(100vh - 68px)}
+aside{padding:18px 12px;border-right:1px solid var(--line);background:#0e1929}
+.navbtn{width:100%;text-align:left;margin:4px 0;background:transparent;color:var(--muted);font-weight:600}.navbtn.active,.navbtn:hover{background:#1b3048;color:#fff}
+main{padding:22px;min-width:0}.pagehead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:17px;margin-bottom:15px;min-width:0}
+.stat{font-size:28px;font-weight:800;margin:8px 0;color:#70ceff}.statlabel{color:var(--muted);font-size:13px}
+.two{display:grid;grid-template-columns:1.4fr 1fr;gap:15px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:550px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:14px}th{color:var(--muted);font-weight:600}
+#map{height:390px;border-radius:10px;z-index:1}.status{display:inline-block;border-radius:20px;padding:4px 9px;font-size:12px;background:#183c34;color:#8df0c8}
+.error{color:#ff9ba3;background:#3b2029;padding:10px;border-radius:8px;margin:10px 0;font-size:13px}.success{color:#8df0c8;background:#17382f;padding:10px;border-radius:8px;margin:10px 0;font-size:13px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;gap:8px;flex-wrap:wrap}.empty{padding:22px;text-align:center;color:var(--muted)}
+footer{color:var(--muted);font-size:12px;padding:12px 2px}
+@media(max-width:850px){.layout{grid-template-columns:1fr}aside{display:flex;overflow:auto;gap:5px;border-right:0;border-bottom:1px solid var(--line);padding:8px}.navbtn{white-space:nowrap;width:auto}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}main{padding:14px}#map{height:320px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr 1fr}.formgrid{grid-template-columns:1fr}}
 </style>
 </head>
-
 <body>
+<section id="loginScreen">
+ <div class="login-card">
+  <div class="brand">BURUNDI JULES TRACKER</div>
+  <h1>Connexion administrateur</h1>
+  <p class="muted">Connectez-vous avec votre compte Firebase autorisé.</p>
+  <form id="loginForm">
+   <label for="email">Adresse e-mail</label><input id="email" type="email" autocomplete="username" required>
+   <label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password" required>
+   <button type="submit">Se connecter</button>
+  </form>
+  <div id="loginMessage"></div>
+  <p class="muted" style="font-size:12px;margin:16px 0 0">Accès réservé aux utilisateurs autorisés. N'utilisez pas un mot de passe partagé.</p>
+ </div>
+</section>
+<section id="app" class="hidden">
+ <header class="topbar"><div><strong>BURUNDI JULES TRACKER</strong><br><small>GPS & Fleet Management</small></div><div class="actions"><span id="userLabel" class="muted"></span><button id="logoutBtn" class="secondary">Déconnexion</button></div></header>
+ <div class="layout">
+  <aside>
+   <button class="navbtn active" data-page="dashboard">▦ Tableau de bord</button>
+   <button class="navbtn" data-page="vehicles">🚘 Véhicules</button>
+   <button class="navbtn" data-page="drivers">👤 Chauffeurs</button>
+   <button class="navbtn" data-page="locations">📍 Positions GPS</button>
+   <button class="navbtn" data-page="alerts">⚠ Alertes</button>
+   <button class="navbtn" data-page="geofences">◎ Zones</button>
+  </aside>
+  <main>
+   <section id="page-dashboard" class="page">
+    <div class="pagehead"><div><h2>Tableau de bord</h2><p class="muted">Vue générale de votre flotte.</p></div><span class="status">Connecté à Firebase</span></div>
+    <div class="grid">
+     <div class="card"><div class="stat" id="vehicleCount">0</div><div class="statlabel">Véhicules enregistrés</div></div>
+     <div class="card"><div class="stat" id="driverCount">0</div><div class="statlabel">Chauffeurs</div></div>
+     <div class="card"><div class="stat" id="alertCount">0</div><div class="statlabel">Alertes</div></div>
+     <div class="card"><div class="stat" id="onlineCount">0</div><div class="statlabel">Véhicules avec position récente</div></div>
+    </div>
+    <div class="card"><h3>Carte de localisation</h3><div id="map"></div><p class="muted" style="margin:10px 0 0;font-size:12px">Les points affichés proviennent des documents Firestore « locations ». Sans application ou boîtier GPS qui envoie des coordonnées, aucune position en direct ne sera reçue.</p></div>
+    <div class="card"><h3>Dernières positions reçues</h3><div class="tablewrap"><table><thead><tr><th>Véhicule</th><th>Latitude</th><th>Longitude</th><th>Vitesse</th><th>Date</th></tr></thead><tbody id="recentLocations"></tbody></table></div></div>
+   </section>
+   <section id="page-vehicles" class="page hidden">
+    <div class="pagehead"><div><h2>Gestion des véhicules</h2><p class="muted">Ajouter et consulter les véhicules.</p></div><button id="addVehicleBtn">+ Ajouter un véhicule</button></div>
+    <div id="vehicleFormCard" class="card hidden"><h3>Nouveau véhicule</h3><form id="vehicleForm"><div class="formgrid">
+     <div><label>Immatriculation *</label><input name="plateNumber" required placeholder="BDI-001"></div>
+     <div><label>Type de véhicule</label><select name="vehicleType"><option>Voiture</option><option>Camion</option><option>Moto</option><option>Bus</option><option>Autre</option></select></div>
+     <div><label>Marque</label><input name="brand" placeholder="Toyota"></div><div><label>Modèle</label><input name="model" placeholder="Corolla"></div>
+     <div><label>Nom du chauffeur</label><input name="driverName"></div><div><label>Numéro du permis</label><input name="licenseNumber"></div>
+     <div><label>Catégorie du permis</label><input name="licenseCategory" placeholder="B"></div><div><label>Expiration du permis</label><input name="licenseExpiry" type="date"></div>
+    </div><div class="actions"><button type="submit">Enregistrer</button><button type="button" id="cancelVehicle" class="secondary">Annuler</button></div></form></div>
+    <div class="card tablewrap"><table><thead><tr><th>Immatriculation</th><th>Type</th><th>Marque / Modèle</th><th>Chauffeur</th><th>Statut</th></tr></thead><tbody id="vehiclesTable"></tbody></table></div>
+   </section>
+   <section id="page-drivers" class="page hidden">
+    <div class="pagehead"><div><h2>Gestion des chauffeurs</h2><p class="muted">Informations et permis des chauffeurs.</p></div><button id="addDriverBtn">+ Ajouter un chauffeur</button></div>
+    <div id="driverFormCard" class="card hidden"><h3>Nouveau chauffeur</h3><form id="driverForm"><div class="formgrid">
+     <div><label>Nom complet *</label><input name="fullName" required></div><div><label>Téléphone</label><input name="phone" placeholder="+257..."></div>
+     <div><label>Numéro du permis</label><input name="licenseNumber"></div><div><label>Catégorie</label><input name="licenseCategory" placeholder="A, B, C..."></div>
+     <div><label>Expiration du permis</label><input name="licenseExpiry" type="date"></div><div><label>Statut</label><select name="status"><option value="active">Actif</option><option value="inactive">Inactif</option></select></div>
+    </div><div class="actions"><button type="submit">Enregistrer</button><button type="button" id="cancelDriver" class="secondary">Annuler</button></div></form></div>
+    <div class="card tablewrap"><table><thead><tr><th>Nom</th><th>Téléphone</th><th>Permis</th><th>Catégorie</th><th>Expiration</th><th>Statut</th></tr></thead><tbody id="driversTable"></tbody></table></div>
+   </section>
+   <section id="page-locations" class="page hidden"><div class="pagehead"><div><h2>Positions GPS</h2><p class="muted">Historique des coordonnées reçues dans Firestore.</p></div><button class="secondary" id="refreshBtn">Actualiser</button></div><div class="card tablewrap"><table><thead><tr><th>Véhicule ID</th><th>Latitude</th><th>Longitude</th><th>Vitesse</th><th>Précision</th><th>Date / heure</th></tr></thead><tbody id="locationsTable"></tbody></table></div></section>
+   <section id="page-alerts" class="page hidden"><div class="pagehead"><div><h2>Alertes</h2><p class="muted">Alertes enregistrées dans Firestore.</p></div></div><div class="card tablewrap"><table><thead><tr><th>Véhicule</th><th>Type</th><th>Message</th><th>Gravité</th><th>Date</th><th>Lu</th></tr></thead><tbody id="alertsTable"></tbody></table></div></section>
+   <section id="page-geofences" class="page hidden"><div class="pagehead"><div><h2>Zones géographiques</h2><p class="muted">Zones configurées dans Firestore.</p></div></div><div class="card tablewrap"><table><thead><tr><th>Nom</th><th>Latitude</th><th>Longitude</th><th>Rayon (m)</th><th>Active</th></tr></thead><tbody id="geofencesTable"></tbody></table></div></section>
+   <footer>BURUNDI JULES TRACKER · Prototype connecté à Firebase · Les positions de démonstration ne sont pas des positions GPS en direct.</footer>
+  </main>
+ </div>
+</section>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, getDocs, addDoc, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-<header>
-<h2>BURUNDI JULES TRACKER</h2>
-<p>GPS Vehicle Tracking System</p>
-</header>
-
-<div class="container">
-
-<h3>Tableau de bord</h3>
-
-<div class="stats">
-<div class="card stat">
-<h2 id="vehicles">0</h2>
-Véhicules
-</div>
-
-<div class="card stat">
-<h2>0</h2>
-Chauffeurs
-</div>
-
-<div class="card stat">
-<h2>0</h2>
-Alertes
-</div>
-
-<div class="card stat">
-<h2>0</h2>
-En ligne
-</div>
-</div>
-
-<div class="card">
-<h3>Localisation GPS</h3>
-<div id="map"></div>
-<p>Position de démonstration – GPS réel non connecté.</p>
-</div>
-
-<div class="card">
-<h3>Gestion des véhicules</h3>
-<button onclick="alert('Module véhicules en préparation')">
-Ajouter un véhicule
-</button>
-</div>
-
-<div class="card">
-<h3>Gestion des chauffeurs</h3>
-<button onclick="alert('Module chauffeurs en préparation')">
-Ajouter un chauffeur
-</button>
-</div>
-
-</div>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-<script>
-const map=L.map('map').setView([-3.3614,29.3599],12);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
- attribution:'© OpenStreetMap'
-}).addTo(map);
-
-L.marker([-3.3614,29.3599])
-.addTo(map)
-.bindPopup('Bujumbura - Position de démonstration');
+const firebaseConfig = {
+ apiKey: "AIzaSyAY8vu4D0rV08Z3ztTz4vQsmjJ5w7q3Qsk",
+ authDomain: "burundi-jules-tracker.firebaseapp.com",
+ projectId: "burundi-jules-tracker",
+ storageBucket: "burundi-jules-tracker.firebasestorage.app",
+ messagingSenderId: "567725218562",
+ appId: "1:567725218562:web:0b9252440cae1b8d58401b"
+};
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const $=id=>document.getElementById(id);
+let map, markers=[], cached={vehicles:[],drivers:[],locations:[],alerts:[],geofences:[]};
+function showMessage(target,msg,type="error"){ $(target).innerHTML=`<div class="${type}">${escapeHtml(msg)}</div>`; }
+function escapeHtml(v=""){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function dateText(v){if(!v)return "—";let d=v.toDate?v.toDate():new Date(v);return isNaN(d)? "—":d.toLocaleString("fr-FR");}
+function numberText(v){return typeof v==="number"?v:"—";}
+function goPage(name){document.querySelectorAll(".page").forEach(x=>x.classList.add("hidden"));$("page-"+name).classList.remove("hidden");document.querySelectorAll(".navbtn").forEach(x=>x.classList.toggle("active",x.dataset.page===name));if(name==="dashboard"&&map)setTimeout(()=>map.invalidateSize(),100);}
+document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>goPage(b.dataset.page)));
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginMessage").innerHTML="";try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(err){showMessage("loginMessage",friendlyAuthError(err.code));}});
+function friendlyAuthError(code){const m={"auth/invalid-credential":"E-mail ou mot de passe incorrect.","auth/user-not-found":"Compte introuvable.","auth/wrong-password":"Mot de passe incorrect.","auth/too-many-requests":"Trop de tentatives. Réessayez plus tard.","auth/network-request-failed":"Problème de connexion Internet."};return m[code]||"Connexion impossible : "+code;}
+$("logoutBtn").onclick=()=>signOut(auth);
+onAuthStateChanged(auth,async user=>{
+ if(!user){$("app").classList.add("hidden");$("loginScreen").classList.remove("hidden");return;}
+ try{
+  const snap=await getDoc(doc(db,"Users",user.uid));
+  if(!snap.exists()||snap.data().role!=="admin"||snap.data().active!==true){await signOut(auth);showMessage("loginMessage","Accès refusé : votre profil Firestore doit avoir role = admin et active = true.");return;}
+  $("loginScreen").classList.add("hidden");$("app").classList.remove("hidden");$("userLabel").textContent=user.email||"Administrateur";
+  initMap();await loadAll();
+ }catch(err){await signOut(auth);$("loginScreen").classList.remove("hidden");showMessage("loginMessage","Vérification administrateur impossible. Vérifiez le document Users et les règles Firestore. "+err.message);}
+});
+function initMap(){if(map)return;map=L.map("map").setView([-3.3614,29.3599],12);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);}
+async function readCollection(name){const s=await getDocs(collection(db,name));return s.docs.map(d=>({id:d.id,...d.data()}));}
+async function loadAll(){try{
+ const [vehicles,drivers,locations,alerts,geofences]=await Promise.all(["vehicles","drivers","locations","alerts","geofences"].map(readCollection));
+ cached={vehicles,drivers,locations,alerts,geofences};renderAll();
+ }catch(err){alert("Erreur Firestore : "+err.message+". Vérifiez les règles de sécurité et les noms exacts des collections.");}}
+function renderAll(){
+ $("vehicleCount").textContent=cached.vehicles.length;$("driverCount").textContent=cached.drivers.length;$("alertCount").textContent=cached.alerts.length;
+ const fresh=cached.locations.filter(x=>x.timestamp && Date.now()-(x.timestamp.toDate?x.timestamp.toDate().getTime():new Date(x.timestamp).getTime())<15*60*1000);$("onlineCount").textContent=fresh.length;
+ $("vehiclesTable").innerHTML=cached.vehicles.map(v=>`<tr><td>${escapeHtml(v.plateNumber||v.id)}</td><td>${escapeHtml(v.vehicleType||"—")}</td><td>${escapeHtml((v.brand||"")+" "+(v.model||""))}</td><td>${escapeHtml(v.driverName||"—")}</td><td>${escapeHtml(v.status||"active")}</td></tr>`).join("")||emptyRow(5);
+ $("driversTable").innerHTML=cached.drivers.map(d=>`<tr><td>${escapeHtml(d.fullName||"—")}</td><td>${escapeHtml(d.phone||"—")}</td><td>${escapeHtml(d.licenseNumber||"—")}</td><td>${escapeHtml(d.licenseCategory||"—")}</td><td>${escapeHtml(d.licenseExpiry||"—")}</td><td>${escapeHtml(d.status||"—")}</td></tr>`).join("")||emptyRow(6);
+ $("locationsTable").innerHTML=cached.locations.map(l=>locationRow(l,true)).join("")||emptyRow(6);
+ $("recentLocations").innerHTML=cached.locations.slice(0,6).map(l=>`<tr><td>${escapeHtml(l.vehicleId||"—")}</td><td>${escapeHtml(coord(l,"latitude"))}</td><td>${escapeHtml(coord(l,"longitude"))}</td><td>${escapeHtml(l.speed??"—")}</td><td>${escapeHtml(dateText(l.timestamp))}</td></tr>`).join("")||emptyRow(5);
+ $("alertsTable").innerHTML=cached.alerts.map(a=>`<tr><td>${escapeHtml(a.vehicleId||"—")}</td><td>${escapeHtml(a.alertType||"—")}</td><td>${escapeHtml(a.message||"—")}</td><td>${escapeHtml(a.severity||"—")}</td><td>${escapeHtml(dateText(a.timestamp))}</td><td>${a.read===true?"Oui":"Non"}</td></tr>`).join("")||emptyRow(6);
+ $("geofencesTable").innerHTML=cached.geofences.map(g=>`<tr><td>${escapeHtml(g.name||"—")}</td><td>${escapeHtml(g.latitude??"—")}</td><td>${escapeHtml(g.longitude??"—")}</td><td>${escapeHtml(g.radius??"—")}</td><td>${g.active===true?"Oui":"Non"}</td></tr>`).join("")||emptyRow(5);
+ renderMarkers();
+}
+function emptyRow(n){return `<tr><td colspan="${n}" class="empty">Aucune donnée enregistrée.</td></tr>`;}
+function coord(l,k){if(l.position&&typeof l.position.latitude==="number")return l.position[k==="latitude"?"latitude":"longitude"];return l[k]??"—";}
+function locationRow(l,full){return `<tr><td>${escapeHtml(l.vehicleId||"—")}</td><td>${escapeHtml(coord(l,"latitude"))}</td><td>${escapeHtml(coord(l,"longitude"))}</td><td>${escapeHtml(l.speed??"—")}</td><td>${escapeHtml(l.accuracy??"—")}</td><td>${escapeHtml(dateText(l.timestamp))}</td></tr>`;}
+function renderMarkers(){if(!map)return;markers.forEach(m=>map.removeLayer(m));markers=[];cached.locations.forEach(l=>{let lat=coord(l,"latitude"),lng=coord(l,"longitude");if(typeof lat==="number"&&typeof lng==="number"){let m=L.marker([lat,lng]).addTo(map).bindPopup(`<b>${escapeHtml(l.vehicleId||"Véhicule")}</b><br>Vitesse: ${escapeHtml(l.speed??"—")} km/h<br>${escapeHtml(dateText(l.timestamp))}`);markers.push(m);}});}
+$("addVehicleBtn").onclick=()=>$("vehicleFormCard").classList.remove("hidden");$("cancelVehicle").onclick=()=>$("vehicleFormCard").classList.add("hidden");
+$("vehicleForm").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),data=Object.fromEntries(f.entries());data.status="active";data.createdAt=serverTimestamp();try{await addDoc(collection(db,"vehicles"),data);e.target.reset();$("vehicleFormCard").classList.add("hidden");await loadAll();alert("Véhicule enregistré.");}catch(err){alert("Enregistrement impossible : "+err.message);}};
+$("addDriverBtn").onclick=()=>$("driverFormCard").classList.remove("hidden");$("cancelDriver").onclick=()=>$("driverFormCard").classList.add("hidden");
+$("driverForm").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),data=Object.fromEntries(f.entries());data.createdAt=serverTimestamp();try{await addDoc(collection(db,"drivers"),data);e.target.reset();$("driverFormCard").classList.add("hidden");await loadAll();alert("Chauffeur enregistré.");}catch(err){alert("Enregistrement impossible : "+err.message);}};
+$("refreshBtn").onclick=loadAll;
 </script>
-
 </body>
 </html>
