@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BURUNDI JULES TRACKER</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,sans-serif;
+ background:#101827;
+ color:white;
+}
+header{
+ background:#17263c;
+ padding:20px;
+ text-align:center;
+}
+header h2{color:#38bdf8}
+.container{padding:18px}
+.card{
+ background:#1e293b;
+ padding:18px;
+ margin-bottom:15px;
+ border-radius:12px;
+}
+.stats{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:12px;
+}
+.stat h2{color:#38bdf8}
+#map{
+ height:380px;
+ border-radius:12px;
+}
+button{
+ background:#0284c7;
+ color:white;
+ border:0;
+ padding:12px;
+ border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>BURUNDI JULES TRACKER</h2>
+<p>GPS Vehicle Tracking System</p>
+</header>
+
+<div class="container">
+
+<h3>Tableau de bord</h3>
+
+<div class="stats">
+<div class="card stat">
+<h2 id="vehicles">0</h2>
+Véhicules
+</div>
+
+<div class="card stat">
+<h2>0</h2>
+Chauffeurs
+</div>
+
+<div class="card stat">
+<h2>0</h2>
+Alertes
+</div>
+
+<div class="card stat">
+<h2>0</h2>
+En ligne
+</div>
+</div>
+
+<div class="card">
+<h3>Localisation GPS</h3>
+<div id="map"></div>
+<p>Position de démonstration – GPS réel non connecté.</p>
+</div>
+
+<div class="card">
+<h3>Gestion des véhicules</h3>
+<button onclick="alert('Module véhicules en préparation')">
+Ajouter un véhicule
+</button>
+</div>
+
+<div class="card">
+<h3>Gestion des chauffeurs</h3>
+<button onclick="alert('Module chauffeurs en préparation')">
+Ajouter un chauffeur
+</button>
+</div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+const map=L.map('map').setView([-3.3614,29.3599],12);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+ attribution:'© OpenStreetMap'
+}).addTo(map);
+
+L.marker([-3.3614,29.3599])
+.addTo(map)
+.bindPopup('Bujumbura - Position de démonstration');
+</script>
+
+</body>
+</html>
