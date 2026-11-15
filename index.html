@@ -329,4 +329,478 @@ where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig={
-apiKey:"AIzaSyAY8vu4D0rV
+apiKey:"AIzaSyAY8vu4D0rV08Z3ztTz4vQsmjJ5w7q3Qsk",
+authDomain:"burundi-jules-tracker.firebaseapp.com",
+projectId:"burundi-jules-tracker",
+storageBucket:"burundi-jules-tracker.firebasestorage.app",
+messagingSenderId:"567725218562",
+appId:"1:567725218562:web:0b9252440cae1b8d58401b"
+};
+
+const ADMIN_UID="Ow8cM91YENSk9g7gaLn5ool7wWJ3";
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+const $=id=>document.getElementById(id);
+
+let currentUser=null;
+let userRole="";
+let ownerScope="";
+let map=null;
+let markers=[];
+
+function safe(v){
+return String(v??"").replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",
+'"':"&quot;","'":"&#39;"
+}[c]));
+}
+
+window.openPage=function(id){
+document.querySelectorAll(".page").forEach(p=>
+p.classList.remove("active"));
+$(id).classList.add("active");
+
+if(id==="gps" && map){
+setTimeout(()=>map.invalidateSize(),200);
+}
+};
+
+async function getItems(name){
+const s=await getDocs(collection(db,name));
+return s.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+async function getScopedItems(name){
+if(userRole==="admin")return getItems(name);
+
+const q=query(
+collection(db,name),
+where("ownerId","==",ownerScope)
+);
+const s=await getDocs(q);
+return s.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+/* CONNEXION */
+
+$("loginBtn").onclick=async()=>{
+$("loginMessage").textContent="Connexion...";
+try{
+await signInWithEmailAndPassword(
+auth,$("email").value.trim(),$("password").value
+);
+}catch(e){
+$("loginMessage").textContent=e.message;
+}
+};
+
+$("logoutBtn").onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+currentUser=user;
+
+if(!user){
+$("login").classList.remove("hidden");
+$("application").classList.add("hidden");
+return;
+}
+
+try{
+const snap=await getDoc(doc(db,"Users",user.uid));
+
+if(!snap.exists())throw new Error("Profil utilisateur introuvable.");
+
+const profile=snap.data();
+userRole=String(profile.role||"").trim().toLowerCase();
+
+if(profile.active!==true)throw new Error("Compte désactivé.");
+
+if(userRole==="admin"){
+if(user.uid!==ADMIN_UID)
+throw new Error("Administrateur non autorisé.");
+ownerScope="";
+}else if(userRole==="owner"){
+ownerScope=profile.ownerId||user.uid;
+}else{
+throw new Error("Rôle non autorisé.");
+}
+
+$("login").classList.add("hidden");
+$("application").classList.remove("hidden");
+
+$("connectedUser").textContent=
+"Connecté : "+user.email+" | "+userRole.toUpperCase();
+
+if(userRole==="owner"){
+$("owners").classList.add("hidden");
+$("drivers").classList.add("hidden");
+$("alerts").classList.add("hidden");
+}
+
+await loadAll();
+
+}catch(e){
+alert("Accès refusé : "+e.message);
+await signOut(auth);
+}
+});
+
+/* CHARGEMENT */
+
+async function loadAll(){
+await loadOwners();
+await loadDrivers();
+await loadVehicles();
+await loadAlerts();
+await loadGPS();
+await loadHistory();
+}
+
+/* PROPRIETAIRES */
+
+async function loadOwners(){
+const items=await getItems("owners");
+$("ownerCount").textContent=items.length;
+
+$("ownerList").innerHTML=items.length?
+`<div class="tablewrap"><table>
+<tr><th>Nom</th><th>Téléphone</th><th>Email</th><th>Actions</th></tr>
+${items.map(o=>`
+<tr>
+<td>${safe(o.name)}</td>
+<td>${safe(o.phone)}</td>
+<td>${safe(o.email)}</td>
+<td class="actions">
+<button onclick="editOwner('${o.id}')">Modifier</button>
+<button class="danger" onclick="removeOwner('${o.id}')">Supprimer</button>
+</td>
+</tr>`).join("")}
+</table></div>`:"Aucun propriétaire.";
+
+$("vehicleOwner").innerHTML=
+'<option value="">Choisir propriétaire</option>'+
+items.map(o=>`<option value="${o.id}">${safe(o.name)}</option>`).join("");
+
+$("driverOwner").innerHTML=
+'<option value="">Propriétaire</option>'+
+items.map(o=>`<option value="${o.id}">${safe(o.name)}</option>`).join("");
+}
+
+window.resetOwner=()=>{
+$("ownerForm").reset();
+$("ownerId").value="";
+};
+
+window.editOwner=async id=>{
+const s=await getDoc(doc(db,"owners",id));
+if(!s.exists())return;
+const o=s.data();
+$("ownerId").value=id;
+$("ownerName").value=o.name||"";
+$("ownerPhone").value=o.phone||"";
+$("ownerEmail").value=o.email||"";
+$("ownerAddress").value=o.address||"";
+openPage("owners");
+};
+
+window.removeOwner=async id=>{
+if(!confirm("Supprimer ce propriétaire ?"))return;
+try{
+await deleteDoc(doc(db,"owners",id));
+await loadOwners();
+}catch(e){alert(e.message);}
+};
+
+$("ownerForm").onsubmit=async e=>{
+e.preventDefault();
+if(userRole!=="admin")return;
+
+const id=$("ownerId").value;
+const data={
+name:$("ownerName").value.trim(),
+phone:$("ownerPhone").value.trim(),
+email:$("ownerEmail").value.trim(),
+address:$("ownerAddress").value.trim(),
+updatedAt:new Date()
+};
+
+try{
+if(id){
+await updateDoc(doc(db,"owners",id),data);
+}else{
+await addDoc(collection(db,"owners"),{
+...data,
+createdAt:new Date(),
+accountStatus:"À créer"
+});
+}
+resetOwner();
+await loadOwners();
+alert("Propriétaire enregistré.");
+}catch(e){alert("Erreur : "+e.message);}
+};
+
+/* CHAUFFEURS */
+
+async function loadDrivers(){
+const items=await getScopedItems("drivers");
+$("driverCount").textContent=items.length;
+
+$("driverList").innerHTML=items.length?
+`<div class="tablewrap"><table>
+<tr><th>Nom</th><th>Téléphone</th><th>Permis</th><th>Actions</th></tr>
+${items.map(d=>`
+<tr>
+<td>${safe(d.name)}</td>
+<td>${safe(d.phone)}</td>
+<td>${safe(d.licenseNumber)} (${safe(d.licenseCategory)})</td>
+<td class="actions">
+${userRole==="admin"?`
+<button onclick="editDriver('${d.id}')">Modifier</button>
+<button class="danger" onclick="removeDriver('${d.id}')">Supprimer</button>`:"—"}
+</td>
+</tr>`).join("")}
+</table></div>`:"Aucun chauffeur.";
+}
+
+window.resetDriver=()=>{
+$("driverForm").reset();
+$("driverId").value="";
+};
+
+window.editDriver=async id=>{
+const s=await getDoc(doc(db,"drivers",id));
+if(!s.exists())return;
+const d=s.data();
+$("driverId").value=id;
+$("driverName").value=d.name||"";
+$("driverPhone").value=d.phone||"";
+$("licenseNumber").value=d.licenseNumber||"";
+$("licenseCategory").value=d.licenseCategory||"";
+$("licenseExpiry").value=d.licenseExpiry||"";
+$("driverOwner").value=d.ownerId||"";
+openPage("drivers");
+};
+
+window.removeDriver=async id=>{
+if(!confirm("Supprimer ce chauffeur ?"))return;
+try{
+await deleteDoc(doc(db,"drivers",id));
+await loadDrivers();
+await loadVehicles();
+}catch(e){alert(e.message);}
+};
+
+$("driverForm").onsubmit=async e=>{
+e.preventDefault();
+if(userRole!=="admin")return;
+
+const id=$("driverId").value;
+const data={
+name:$("driverName").value.trim(),
+phone:$("driverPhone").value.trim(),
+licenseNumber:$("licenseNumber").value.trim(),
+licenseCategory:$("licenseCategory").value,
+licenseExpiry:$("licenseExpiry").value,
+ownerId:$("driverOwner").value,
+updatedAt:new Date()
+};
+
+try{
+if(id)await updateDoc(doc(db,"drivers",id),data);
+else await addDoc(collection(db,"drivers"),{
+...data,createdAt:new Date()
+});
+resetDriver();
+await loadDrivers();
+alert("Chauffeur enregistré.");
+}catch(e){alert(e.message);}
+};
+
+/* VEHICULES */
+
+async function loadVehicles(){
+const items=await getScopedItems("vehicles");
+$("vehicleCount").textContent=items.length;
+
+const owners=await getItems("owners");
+const drivers=await getItems("drivers");
+
+$("vehicleDriver").innerHTML=
+'<option value="">Choisir chauffeur</option>'+
+drivers.map(d=>`<option value="${d.id}">${safe(d.name)}</option>`).join("");
+
+$("vehicleList").innerHTML=items.length?
+`<div class="tablewrap"><table>
+<tr><th>Photo</th><th>Immatriculation</th><th>Véhicule</th><th>Propriétaire</th><th>Chauffeur</th><th>Actions</th></tr>
+${items.map(v=>{
+const owner=owners.find(o=>o.id===v.ownerId);
+const driver=drivers.find(d=>d.id===v.driverId);
+return `<tr>
+<td>${v.photoURL?`<img class="photo" src="${safe(v.photoURL)}" alt="Véhicule">`:"—"}</td>
+<td>${safe(v.plateNumber)}</td>
+<td>${safe(v.brand)} ${safe(v.model)}</td>
+<td>${safe(owner?.name||"")}</td>
+<td>${safe(driver?.name||"")}</td>
+<td class="actions">
+${userRole==="admin"?`
+<button onclick="editVehicle('${v.id}')">Modifier</button>
+<button class="danger" onclick="removeVehicle('${v.id}')">Supprimer</button>`:"—"}
+</td>
+</tr>`;
+}).join("")}
+</table></div>`:"Aucun véhicule.";
+}
+
+window.resetVehicle=()=>{
+$("vehicleForm").reset();
+$("vehicleId").value="";
+};
+
+window.editVehicle=async id=>{
+const s=await getDoc(doc(db,"vehicles",id));
+if(!s.exists())return;
+const v=s.data();
+$("vehicleId").value=id;
+$("plateNumber").value=v.plateNumber||"";
+$("brand").value=v.brand||"";
+$("model").value=v.model||"";
+$("vehicleType").value=v.type||"";
+$("vehicleStatus").value=v.status||"active";
+$("vehicleOwner").value=v.ownerId||"";
+$("vehicleDriver").value=v.driverId||"";
+$("vehiclePhoto").value=v.photoURL||"";
+$("vehicleDescription").value=v.description||"";
+openPage("vehicles");
+};
+
+window.removeVehicle=async id=>{
+if(!confirm("Supprimer ce véhicule ?"))return;
+try{
+await deleteDoc(doc(db,"vehicles",id));
+await loadVehicles();
+}catch(e){alert(e.message);}
+};
+
+$("vehicleForm").onsubmit=async e=>{
+e.preventDefault();
+if(userRole!=="admin")return;
+
+const id=$("vehicleId").value;
+const data={
+plateNumber:$("plateNumber").value.trim(),
+brand:$("brand").value.trim(),
+model:$("model").value.trim(),
+type:$("vehicleType").value,
+status:$("vehicleStatus").value,
+ownerId:$("vehicleOwner").value,
+driverId:$("vehicleDriver").value,
+photoURL:$("vehiclePhoto").value.trim(),
+description:$("vehicleDescription").value.trim(),
+updatedAt:new Date()
+};
+
+try{
+if(id)await updateDoc(doc(db,"vehicles",id),data);
+else await addDoc(collection(db,"vehicles"),{
+...data,createdAt:new Date()
+});
+resetVehicle();
+await loadVehicles();
+alert("Véhicule enregistré.");
+}catch(e){alert("Erreur : "+e.message);}
+};
+
+/* GPS */
+
+async function loadGPS(){
+const items=await getScopedItems("locations");
+
+if(!map){
+map=L.map("map").setView([-3.3614,29.3599],11);
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{maxZoom:19,attribution:"© OpenStreetMap"}
+).addTo(map);
+}
+
+markers.forEach(m=>map.removeLayer(m));
+markers=[];
+
+let list=[];
+
+for(const x of items){
+const p=x.position;
+if(p && typeof p.latitude==="number" &&
+typeof p.longitude==="number"){
+const m=L.marker([p.latitude,p.longitude]).addTo(map);
+m.bindPopup(
+safe(x.vehicleId||"Véhicule")+
+"<br>Vitesse : "+safe(x.speed??"—")+" km/h"
+);
+markers.push(m);
+list.push(
+safe(x.vehicleId||"Véhicule")+
+" — "+p.latitude.toFixed(5)+", "+
+p.longitude.toFixed(5)
+);
+}
+}
+
+$("gpsList").innerHTML=list.length?list.join("<br>"):
+"Aucune position GPS disponible.";
+
+if(markers.length){
+map.fitBounds(L.featureGroup(markers).getBounds().pad(0.2));
+}
+setTimeout(()=>map.invalidateSize(),200);
+}
+
+/* ALERTES */
+
+async function loadAlerts(){
+const items=await getScopedItems("alerts");
+$("alertCount").textContent=items.length;
+
+$("alertList").innerHTML=items.length?
+`<div class="tablewrap"><table>
+<tr><th>Véhicule</th><th>Message</th><th>Statut</th></tr>
+${items.map(a=>`
+<tr>
+<td>${safe(a.vehicleId)}</td>
+<td>${safe(a.message)}</td>
+<td>${a.read?"Lue":"Non lue"}</td>
+</tr>`).join("")}
+</table></div>`:"Aucune alerte.";
+}
+
+/* HISTORIQUE */
+
+async function loadHistory(){
+const items=await getScopedItems("locations");
+
+$("historyList").innerHTML=items.length?
+`<div class="tablewrap"><table>
+<tr><th>Véhicule</th><th>Latitude</th><th>Longitude</th><th>Vitesse</th><th>Date</th></tr>
+${items.map(x=>{
+const p=x.position||{};
+const t=x.timestamp?.toDate?
+x.timestamp.toDate().toLocaleString():
+"—";
+return `<tr>
+<td>${safe(x.vehicleId)}</td>
+<td>${safe(p.latitude)}</td>
+<td>${safe(p.longitude)}</td>
+<td>${safe(x.speed??"—")}</td>
+<td>${safe(t)}</td>
+</tr>`;
+}).join("")}
+</table></div>`:"Aucun historique.";
+}
+
+</script>
+</body>
+</html>
