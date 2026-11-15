@@ -9,60 +9,85 @@
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-body {
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#f1f5f9;
-  color:#172b3a;
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,sans-serif;
+ background:#f1f5f9;
+ color:#172b3a;
 }
-header {
-  background:#10243a;
-  color:white;
-  padding:20px;
+header{
+ background:#10243a;
+ color:white;
+ padding:20px;
 }
-header h2 {margin:0}
-main {padding:15px;max-width:1100px;margin:auto}
-.card {
-  background:white;
-  padding:16px;
-  margin:12px 0;
-  border-radius:12px;
-  box-shadow:0 2px 8px #0001;
+header h2{margin:0}
+main{max-width:1200px;margin:auto;padding:15px}
+.card{
+ background:white;
+ padding:16px;
+ margin:12px 0;
+ border-radius:12px;
+ box-shadow:0 2px 8px #0001;
 }
-input,select,button {
-  width:100%;
-  padding:12px;
-  margin:5px 0;
-  border:1px solid #ccd5df;
-  border-radius:7px;
-  box-sizing:border-box;
+input,select,textarea,button{
+ width:100%;
+ padding:12px;
+ margin:5px 0;
+ border:1px solid #ccd5df;
+ border-radius:7px;
 }
-button {
-  background:#1769aa;
-  color:white;
-  border:0;
-  font-weight:bold;
+button{
+ background:#1769aa;
+ color:white;
+ border:0;
+ font-weight:bold;
+ cursor:pointer;
 }
-.delete {background:#b42318}
-.secondary {background:#526579}
-nav {display:flex;flex-wrap:wrap;gap:5px}
-nav button {flex:1;min-width:100px}
-.page {display:none}
-.page.active {display:block}
-table {width:100%;border-collapse:collapse}
-td,th {
-  border-bottom:1px solid #ddd;
-  padding:8px;
-  text-align:left;
-  font-size:13px;
+button.danger{background:#b42318}
+button.gray{background:#526579}
+nav{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:6px;
 }
-.actions button {padding:7px}
-#map {height:350px}
-.hidden {display:none}
-.note {
-  background:#fff3cd;
-  padding:12px;
-  border-radius:8px;
+nav button{font-size:13px}
+.page{display:none}
+.page.active{display:block}
+.hidden{display:none!important}
+table{
+ width:100%;
+ border-collapse:collapse;
+}
+td,th{
+ padding:9px;
+ border-bottom:1px solid #ddd;
+ text-align:left;
+ font-size:13px;
+}
+.tablewrap{overflow-x:auto}
+#map{height:380px;border-radius:10px}
+.photo{
+ width:85px;
+ height:60px;
+ object-fit:cover;
+ border-radius:7px;
+}
+.stat{
+ background:#e8f2fb;
+ padding:15px;
+ border-radius:8px;
+ margin:5px 0;
+}
+.note{
+ background:#fff3cd;
+ padding:12px;
+ border-radius:8px;
+ font-size:14px;
+}
+.actions button{margin:2px;padding:8px}
+@media(min-width:700px){
+ nav{grid-template-columns:repeat(5,1fr)}
 }
 </style>
 </head>
@@ -71,58 +96,91 @@ td,th {
 
 <header>
 <h2>BURUNDI JULES TRACKER</h2>
-<p>Gestion professionnelle de flotte automobile</p>
+<p>Plateforme professionnelle de gestion et suivi GPS</p>
 </header>
 
 <main>
 
+<!-- CONNEXION -->
+
 <div class="card" id="login">
-<h3>Connexion administrateur</h3>
-<input id="email" type="email" placeholder="Email">
+<h3>Connexion</h3>
+<input id="email" type="email" placeholder="Adresse email">
 <input id="password" type="password" placeholder="Mot de passe">
 <button id="loginBtn">Se connecter</button>
 <p id="loginMessage"></p>
 </div>
 
-<div id="dashboard" class="hidden">
+<div id="application" class="hidden">
 
 <div class="card">
-<b id="userEmail"></b>
-<button id="logoutBtn" class="secondary">Déconnexion</button>
-<button id="notificationBtn">Activer les notifications</button>
+<div id="connectedUser"></div>
+<button id="logoutBtn" class="gray">Déconnexion</button>
 </div>
 
 <nav>
-<button onclick="openPage('home')">Dashboard</button>
+<button onclick="openPage('dashboard')">Dashboard</button>
+<button onclick="openPage('owners')">Propriétaires</button>
 <button onclick="openPage('vehicles')">Véhicules</button>
 <button onclick="openPage('drivers')">Chauffeurs</button>
 <button onclick="openPage('gps')">GPS</button>
 <button onclick="openPage('alerts')">Alertes</button>
+<button onclick="openPage('history')">Historique</button>
 </nav>
 
-<section id="home" class="page active">
+<!-- DASHBOARD -->
+
+<section id="dashboard" class="page active">
 <div class="card">
 <h2>Dashboard</h2>
-<p>Nombre de véhicules : <b id="vehicleCount">0</b></p>
-<p>Nombre de chauffeurs : <b id="driverCount">0</b></p>
-<p>Nombre d'alertes : <b id="alertCount">0</b></p>
+<div class="stat">Propriétaires : <b id="ownerCount">0</b></div>
+<div class="stat">Véhicules : <b id="vehicleCount">0</b></div>
+<div class="stat">Chauffeurs : <b id="driverCount">0</b></div>
+<div class="stat">Alertes : <b id="alertCount">0</b></div>
 </div>
 </section>
 
-<section id="vehicles" class="page">
+<!-- PROPRIETAIRES -->
 
+<section id="owners" class="page">
+<div class="card">
+<h2>Gestion des propriétaires</h2>
+
+<form id="ownerForm">
+<input type="hidden" id="ownerId">
+
+<input id="ownerName" placeholder="Nom complet" required>
+<input id="ownerPhone" placeholder="Téléphone" required>
+<input id="ownerEmail" type="email" placeholder="Email">
+<input id="ownerAddress" placeholder="Adresse">
+
+<button type="submit">Enregistrer propriétaire</button>
+<button type="button" class="gray" onclick="resetOwner()">Annuler</button>
+</form>
+
+<p class="note">
+La création du compte de connexion du propriétaire
+nécessite une étape sécurisée dans Firebase Authentication.
+</p>
+</div>
+
+<div class="card">
+<h3>Liste des propriétaires</h3>
+<div id="ownerList"></div>
+</div>
+</section>
+
+<!-- VEHICULES -->
+
+<section id="vehicles" class="page">
 <div class="card">
 <h2>Gestion des véhicules</h2>
 
 <form id="vehicleForm">
-
 <input type="hidden" id="vehicleId">
 
-<input id="plateNumber"
-placeholder="Immatriculation" required>
-
+<input id="plateNumber" placeholder="Immatriculation" required>
 <input id="brand" placeholder="Marque">
-
 <input id="model" placeholder="Modèle">
 
 <select id="vehicleType">
@@ -141,14 +199,22 @@ placeholder="Immatriculation" required>
 <option value="inactive">Inactif</option>
 </select>
 
-<select id="vehicleDriver">
-<option value="">Aucun chauffeur</option>
+<select id="vehicleOwner">
+<option value="">Choisir propriétaire</option>
 </select>
 
-<button type="submit">Enregistrer</button>
-<button type="button" class="secondary"
-onclick="resetVehicle()">Annuler</button>
+<select id="vehicleDriver">
+<option value="">Choisir chauffeur</option>
+</select>
 
+<input id="vehiclePhoto" type="url"
+placeholder="Lien de la photo du véhicule">
+
+<input id="vehicleDescription"
+placeholder="Description supplémentaire">
+
+<button type="submit">Enregistrer véhicule</button>
+<button type="button" class="gray" onclick="resetVehicle()">Annuler</button>
 </form>
 </div>
 
@@ -156,26 +222,20 @@ onclick="resetVehicle()">Annuler</button>
 <h3>Liste des véhicules</h3>
 <div id="vehicleList"></div>
 </div>
-
 </section>
 
-<section id="drivers" class="page">
+<!-- CHAUFFEURS -->
 
+<section id="drivers" class="page">
 <div class="card">
 <h2>Gestion des chauffeurs</h2>
 
 <form id="driverForm">
-
 <input type="hidden" id="driverId">
 
-<input id="driverName"
-placeholder="Nom complet" required>
-
-<input id="driverPhone"
-placeholder="Téléphone">
-
-<input id="licenseNumber"
-placeholder="Numéro du permis">
+<input id="driverName" placeholder="Nom complet" required>
+<input id="driverPhone" placeholder="Téléphone">
+<input id="licenseNumber" placeholder="Numéro du permis">
 
 <select id="licenseCategory">
 <option value="">Catégorie du permis</option>
@@ -184,17 +244,16 @@ placeholder="Numéro du permis">
 <option>C</option>
 <option>D</option>
 <option>E</option>
-<option>A et B</option>
-<option>B et C</option>
 </select>
 
 <input id="licenseExpiry" type="date">
 
-<button type="submit">Enregistrer</button>
+<select id="driverOwner">
+<option value="">Propriétaire</option>
+</select>
 
-<button type="button" class="secondary"
-onclick="resetDriver()">Annuler</button>
-
+<button type="submit">Enregistrer chauffeur</button>
+<button type="button" class="gray" onclick="resetDriver()">Annuler</button>
 </form>
 </div>
 
@@ -202,45 +261,41 @@ onclick="resetDriver()">Annuler</button>
 <h3>Liste des chauffeurs</h3>
 <div id="driverList"></div>
 </div>
-
 </section>
+
+<!-- GPS -->
 
 <section id="gps" class="page">
-
 <div class="card">
-<h2>Localisation GPS</h2>
-
+<h2>Carte GPS</h2>
 <p class="note">
 La carte affiche les positions enregistrées dans Firebase.
-Pour suivre réellement les véhicules en direct,
-un téléphone ou un traceur GPS doit envoyer ses coordonnées.
+Pour un suivi réellement en direct, le téléphone Android
+du chauffeur doit envoyer régulièrement ses coordonnées.
 </p>
-
-<button onclick="loadGPS()">Actualiser les positions</button>
-
+<button onclick="loadGPS()">Actualiser la carte</button>
 <div id="map"></div>
-
 <div id="gpsList"></div>
-
 </div>
-
 </section>
 
-<section id="alerts" class="page">
+<!-- ALERTES -->
 
+<section id="alerts" class="page">
 <div class="card">
 <h2>Centre des alertes</h2>
-
-<p class="note">
-Les alertes enregistrées dans Firebase seront affichées ici.
-Les alertes automatiques nécessitent un service serveur
-qui analyse les positions GPS.
-</p>
-
 <div id="alertList"></div>
-
 </div>
+</section>
 
+<!-- HISTORIQUE -->
+
+<section id="history" class="page">
+<div class="card">
+<h2>Historique GPS</h2>
+<p>Positions enregistrées dans Firebase.</p>
+<div id="historyList"></div>
+</div>
 </section>
 
 </div>
@@ -268,481 +323,10 @@ collection,
 getDocs,
 addDoc,
 updateDoc,
-deleteDoc
+deleteDoc,
+query,
+where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-import {
-getMessaging,
-getToken,
-onMessage,
-isSupported
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
-
-const firebaseConfig = {
-apiKey: "AIzaSyAY8vu4D0rV08Z3ztTz4vQsmjJ5w7q3Qsk",
-authDomain: "burundi-jules-tracker.firebaseapp.com",
-projectId: "burundi-jules-tracker",
-storageBucket: "burundi-jules-tracker.firebasestorage.app",
-messagingSenderId: "567725218562",
-appId: "1:567725218562:web:0b9252440cae1b8d58401b"
-};
-
-const VAPID_PUBLIC_KEY =
-"BPhHwhcWjCvboFyKVCTulVGikeOGGCo1DWMaLXK_H3x9CDA-fFbvMZifQP41qRuU9YES7eyJhRLTZtvdV91Ivgs";
-
-const ADMIN_UID = "Ow8cM91YENSk9g7gaLn5ool7wWJ3";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const $ = id => document.getElementById(id);
-
-let map;
-let markers = [];
-
-function safe(v) {
-return String(v ?? "").replace(/[&<>"']/g,c=>({
-"&":"&amp;","<":"&lt;",">":"&gt;",
-'"':"&quot;","'":"&#39;"
-}[c]));
-}
-
-window.openPage = function(id) {
-document.querySelectorAll(".page").forEach(p=>{
-p.classList.remove("active");
-});
-$(id).classList.add("active");
-
-if(id==="gps" && map) {
-setTimeout(()=>map.invalidateSize(),200);
-}
-};
-
-$("loginBtn").onclick = async()=>{
-$("loginMessage").textContent="Connexion...";
-try {
-await signInWithEmailAndPassword(
-auth,
-$("email").value.trim(),
-$("password").value
-);
-} catch(e) {
-$("loginMessage").textContent=e.message;
-}
-};
-
-$("logoutBtn").onclick=()=>signOut(auth);
-
-onAuthStateChanged(auth,async user=>{
-
-if(!user) {
-$("login").classList.remove("hidden");
-$("dashboard").classList.add("hidden");
-return;
-}
-
-try {
-
-const s=await getDoc(doc(db,"Users",user.uid));
-const d=s.exists()?s.data():{};
-
-if(
-user.uid!==ADMIN_UID ||
-!s.exists() ||
-String(d.role??"").trim().toLowerCase()!=="admin" ||
-d.active!==true
-) {
-await signOut(auth);
-$("loginMessage").textContent=
-"Accès refusé : profil administrateur invalide.";
-return;
-}
-
-$("login").classList.add("hidden");
-$("dashboard").classList.remove("hidden");
-$("userEmail").textContent=user.email;
-
-await loadAll();
-
-} catch(e) {
-alert("Erreur Firebase : "+e.message);
-await signOut(auth);
-}
-
-});
-
-async function getItems(name) {
-const s=await getDocs(collection(db,name));
-return s.docs.map(d=>({id:d.id,...d.data()}));
-}
-
-async function loadAll() {
-await loadVehicles();
-await loadDrivers();
-await loadGPS();
-await loadAlerts();
-}
-
-async function loadVehicles() {
-
-const items=await getItems("vehicles");
-
-$("vehicleCount").textContent=items.length;
-
-$("vehicleList").innerHTML=items.length?
-`<table>
-<tr>
-<th>Immatriculation</th>
-<th>Marque</th>
-<th>Chauffeur</th>
-<th>Actions</th>
-</tr>
-${items.map(v=>`
-<tr>
-<td>${safe(v.plateNumber)}</td>
-<td>${safe(v.brand)} ${safe(v.model)}</td>
-<td>${safe(v.driver)}</td>
-<td class="actions">
-<button onclick="editVehicle('${v.id}')">Modifier</button>
-<button class="delete"
-onclick="deleteVehicle('${v.id}')">Supprimer</button>
-</td>
-</tr>`).join("")}
-</table>`:"Aucun véhicule.";
-
-const drivers=await getItems("drivers");
-
-$("vehicleDriver").innerHTML=
-'<option value="">Aucun chauffeur</option>'+
-drivers.map(d=>
-`<option value="${safe(d.name)}">${safe(d.name)}</option>`
-).join("");
-
-}
-
-window.editVehicle=async id=>{
-
-const s=await getDoc(doc(db,"vehicles",id));
-if(!s.exists())return;
-
-const v=s.data();
-
-$("vehicleId").value=id;
-$("plateNumber").value=v.plateNumber||"";
-$("brand").value=v.brand||"";
-$("model").value=v.model||"";
-$("vehicleType").value=v.type||"";
-$("vehicleStatus").value=v.status||"active";
-$("vehicleDriver").value=v.driver||"";
-
-openPage("vehicles");
-window.scrollTo(0,0);
-
-};
-
-window.deleteVehicle=async id=>{
-
-if(!confirm("Supprimer ce véhicule ?"))return;
-
-try {
-await deleteDoc(doc(db,"vehicles",id));
-await loadVehicles();
-alert("Véhicule supprimé.");
-} catch(e) {
-alert(e.message);
-}
-
-};
-
-window.resetVehicle=()=>{
-$("vehicleForm").reset();
-$("vehicleId").value="";
-};
-
-$("vehicleForm").onsubmit=async e=>{
-
-e.preventDefault();
-
-const id=$("vehicleId").value;
-
-const data={
-plateNumber:$("plateNumber").value.trim(),
-brand:$("brand").value.trim(),
-model:$("model").value.trim(),
-type:$("vehicleType").value,
-status:$("vehicleStatus").value,
-driver:$("vehicleDriver").value,
-updatedAt:new Date()
-};
-
-try {
-
-if(id) {
-await updateDoc(doc(db,"vehicles",id),data);
-} else {
-await addDoc(collection(db,"vehicles"),{
-...data,createdAt:new Date()
-});
-}
-
-resetVehicle();
-await loadVehicles();
-alert("Véhicule enregistré.");
-
-} catch(e) {
-alert("Erreur : "+e.message);
-}
-
-};
-
-async function loadDrivers() {
-
-const items=await getItems("drivers");
-
-$("driverCount").textContent=items.length;
-
-$("driverList").innerHTML=items.length?
-`<table>
-<tr>
-<th>Nom</th>
-<th>Téléphone</th>
-<th>Permis</th>
-<th>Actions</th>
-</tr>
-${items.map(d=>`
-<tr>
-<td>${safe(d.name)}</td>
-<td>${safe(d.phone)}</td>
-<td>${safe(d.licenseNumber)} (${safe(d.licenseCategory)})</td>
-<td class="actions">
-<button onclick="editDriver('${d.id}')">Modifier</button>
-<button class="delete"
-onclick="deleteDriver('${d.id}')">Supprimer</button>
-</td>
-</tr>`).join("")}
-</table>`:"Aucun chauffeur.";
-
-}
-
-window.editDriver=async id=>{
-
-const s=await getDoc(doc(db,"drivers",id));
-if(!s.exists())return;
-
-const d=s.data();
-
-$("driverId").value=id;
-$("driverName").value=d.name||"";
-$("driverPhone").value=d.phone||"";
-$("licenseNumber").value=d.licenseNumber||"";
-$("licenseCategory").value=d.licenseCategory||"";
-$("licenseExpiry").value=d.licenseExpiry||"";
-
-openPage("drivers");
-window.scrollTo(0,0);
-
-};
-
-window.deleteDriver=async id=>{
-
-if(!confirm("Supprimer ce chauffeur ?"))return;
-
-try {
-await deleteDoc(doc(db,"drivers",id));
-await loadDrivers();
-await loadVehicles();
-alert("Chauffeur supprimé.");
-} catch(e) {
-alert(e.message);
-}
-
-};
-
-window.resetDriver=()=>{
-$("driverForm").reset();
-$("driverId").value="";
-};
-
-$("driverForm").onsubmit=async e=>{
-
-e.preventDefault();
-
-const id=$("driverId").value;
-
-const data={
-name:$("driverName").value.trim(),
-phone:$("driverPhone").value.trim(),
-licenseNumber:$("licenseNumber").value.trim(),
-licenseCategory:$("licenseCategory").value,
-licenseExpiry:$("licenseExpiry").value,
-updatedAt:new Date()
-};
-
-try {
-
-if(id) {
-await updateDoc(doc(db,"drivers",id),data);
-} else {
-await addDoc(collection(db,"drivers"),{
-...data,createdAt:new Date()
-});
-}
-
-resetDriver();
-await loadDrivers();
-await loadVehicles();
-alert("Chauffeur enregistré.");
-
-} catch(e) {
-alert("Erreur : "+e.message);
-}
-
-};
-
-async function loadGPS() {
-
-const items=await getItems("locations");
-
-if(!map) {
-map=L.map("map").setView([-3.3614,29.3599],11);
-L.tileLayer(
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-{maxZoom:19,attribution:"© OpenStreetMap"}
-).addTo(map);
-}
-
-markers.forEach(m=>map.removeLayer(m));
-markers=[];
-
-let rows=[];
-
-items.forEach(x=>{
-
-const p=x.position;
-
-if(p && typeof p.latitude==="number"
-&& typeof p.longitude==="number") {
-
-const marker=L.marker([
-p.latitude,p.longitude
-]).addTo(map);
-
-marker.bindPopup(
-safe(x.vehicleId||"Véhicule")+
-"<br>Vitesse : "+safe(x.speed??"—")+" km/h"
-);
-
-markers.push(marker);
-
-rows.push(
-safe(x.vehicleId||"Véhicule")+
-" : "+p.latitude.toFixed(5)+
-", "+p.longitude.toFixed(5)
-);
-
-}
-
-});
-
-$("gpsList").innerHTML=rows.length?
-rows.join("<br>"):
-"Aucune position GPS enregistrée.";
-
-if(markers.length) {
-map.fitBounds(
-L.featureGroup(markers).getBounds().pad(0.2)
-);
-}
-
-setTimeout(()=>map.invalidateSize(),200);
-
-}
-
-async function loadAlerts() {
-
-const items=await getItems("alerts");
-
-$("alertCount").textContent=items.length;
-
-$("alertList").innerHTML=items.length?
-`<table>
-<tr><th>Véhicule</th><th>Message</th><th>Statut</th></tr>
-${items.map(a=>`
-<tr>
-<td>${safe(a.vehicleId)}</td>
-<td>${safe(a.message)}</td>
-<td>${a.read?"Lue":"Non lue"}</td>
-</tr>`).join("")}
-</table>`:"Aucune alerte.";
-
-}
-
-$("notificationBtn").onclick=async()=>{
-
-try {
-
-if(!("Notification" in window)) {
-alert("Notifications non supportées.");
-return;
-}
-
-const permission=await Notification.requestPermission();
-
-if(permission!=="granted") {
-alert("Permission refusée.");
-return;
-}
-
-const registration=
-await navigator.serviceWorker.register(
-"./firebase-messaging-sw.js"
-);
-
-if(!await isSupported()) {
-alert("Firebase Messaging non supporté.");
-return;
-}
-
-const messaging=getMessaging(app);
-
-const token=await getToken(messaging,{
-vapidKey:VAPID_PUBLIC_KEY,
-serviceWorkerRegistration:registration
-});
-
-if(!token) {
-alert("Token non obtenu.");
-return;
-}
-
-await updateDoc(
-doc(db,"Users",auth.currentUser.uid),
-{
-fcmToken:token,
-fcmTokenUpdatedAt:new Date()
-}
-);
-
-onMessage(messaging,payload=>{
-
-new Notification(
-payload.notification?.title||"BURUNDI JULES TRACKER",
-{
-body:payload.notification?.body||"Nouvelle alerte."
-}
-);
-
-});
-
-alert("Notifications activées sur cet appareil.");
-
-} catch(e) {
-alert("Erreur notification : "+e.message);
-}
-
-};
-
-</script>
-</body>
-</html>
+const firebaseConfig={
+apiKey:"AIzaSyAY8vu4D0rV
